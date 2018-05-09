@@ -38,20 +38,20 @@ def generator(samples, batch_size=32):
             # trim image to only see section with road
             X_train = np.array(images)
             y_train = np.array(angles)
-            yield shuffle(X_train[:, :, 50:300, :], y_train)
+            yield shuffle(X_train, y_train)
 
 # compile and train the model using the generator function
 batch_size = 64
 train_generator = generator(train_samples, batch_size=batch_size)
 validation_generator = generator(validation_samples, batch_size=batch_size)
 
-ch, row, col = 3, 160, 250  # Trimmed image format
+ch, row, col = 3, 160, 320  # Trimmed image format
 
 inputs = Input(shape=(row, col, ch))
 
-x = Cropping2D(cropping=((50, 20), (0, 0)))
+x = Cropping2D(cropping=((50, 20), (0, 0)))(inputs)
 
-x = Conv2D(6, (5, 5), padding='valid')(inputs)
+x = Conv2D(6, (5, 5), padding='valid')(x)
 x = MaxPooling2D(pool_size=(3, 3), strides=(2, 2), padding='valid')(x)
 x = Activation(activation='elu')(x)
 x = BatchNormalization()(x)
@@ -92,7 +92,7 @@ model.compile(optimizer=adam_opt, loss='mse', metrics=['accuracy'])
 
 model.fit_generator(train_generator, steps_per_epoch=len(train_samples)/batch_size, 
             validation_data=validation_generator, 
-            nb_val_samples=len(validation_samples), nb_epoch=10)
+            nb_val_samples=len(validation_samples), nb_epoch=3)
 
 model.save('model.h5', overwrite=True)
 
