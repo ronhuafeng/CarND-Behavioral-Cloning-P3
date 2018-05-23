@@ -3,7 +3,16 @@ import numpy as np
 from sklearn.utils import shuffle
 import imageio
 
-def extract_data(data_paths, L_AUG=True, R_AUG=True, correction=0.2):
+# accept all steering angles
+def default_direction_filter(ang):
+    return True, ang
+
+# extract datasets from a list of `data_paths`
+# L_AUG means if needs to apply left-camera images augmention
+# R_AUG means if needs to apply right-camera images augmention
+# corretion is the angle to be added or subtracted when applying augmention
+# directionFilter is the function to filter data based on the steering angle
+def extract_data(data_paths, L_AUG=True, R_AUG=True, correction=0.2, directionFilter=default_direction_filter):
     all_samples = []
     all_steerings = []
     for path in data_paths:
@@ -17,14 +26,17 @@ def extract_data(data_paths, L_AUG=True, R_AUG=True, correction=0.2):
             reader = csv.reader(csvfile)
             next(reader)
             for line in reader:
-                samples.append(path + '/IMG/' + line[0].split('/')[-1])
-                steerings.append(float(line[3]))
-                if L_AUG is True:
-                    samples_left.append(path + '/IMG/' + line[1].split('/')[-1])
-                    steerings_left.append(float(line[3]) + correction)
-                if R_AUG is True:
-                    samples_right.append(path + '/IMG/' + line[2].split('/')[-1])
-                    steerings_right.append(float(line[3]) - correction)
+                ang = float(line[3])
+                is_add, ang_add = directionFilter(ang)
+                if is_add:
+                    samples.append(path + '/IMG/' + line[0].split('/')[-1])
+                    steerings.append(ang_add)
+                    if L_AUG is True:
+                        samples_left.append(path + '/IMG/' + line[1].split('/')[-1])
+                        steerings_left.append(ang_add + correction)
+                    if R_AUG is True:
+                        samples_right.append(path + '/IMG/' + line[2].split('/')[-1])
+                        steerings_right.append(ang_add - correction)
                 
         all_samples.extend(samples[0:-100])
         all_steerings.extend(steerings[0:-100])
@@ -34,8 +46,12 @@ def extract_data(data_paths, L_AUG=True, R_AUG=True, correction=0.2):
         if R_AUG == True:
             all_samples.extend(samples_right[0:-100])
             all_steerings.extend(steerings_right[0:-100])
+
     return all_samples, all_steerings
 
+# sampel_generator generates training datasets
+# samples and steering are input datasets
+# Flip_AUG is whether to flip images to augment datasets
 def sample_generator(samples, steerings, batch_size=32, Flip_AUG=True):
     num_samples = len(samples)
 

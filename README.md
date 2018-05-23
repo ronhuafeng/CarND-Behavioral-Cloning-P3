@@ -120,6 +120,45 @@ Will run the video at 48 FPS. The default FPS is 60.
 ### Tips
 - Please keep in mind that training images are loaded in BGR colorspace using cv2 while drive.py load images in RGB to predict the steering angles.
 
-## How to write a README
-A well written README file can enhance your project and portfolio.  Develop your abilities to create professional README files by completing [this free course](https://www.udacity.com/course/writing-readmes--ud777).
+## The network architecture
+
+The architecture of this model is based on the Nvidia model mentioned in the course.
+
+- crop layer to cut edges (60, 24), (0, 0))
+- BatchNormalization layer
+- GaussianNoise(0.01) layer
+- conv2D 5x5 filters 24 strides 2x2, activation function 'elu' 
+- conv2D 5x5 filters 36 strides 2x2, activation function 'elu' 
+- conv2D 2x2 filters 48 strides 2x2, activation function 'elu' 
+- conv2D 2x2 filters 64 strides 2x2, activation function 'elu' 
+- Flatten layer
+- fc layer size 1164, activation function 'elu', with dropout 0.5
+- fc layer size 100, activation function 'elu', with dropout 0.5
+- fc layer size 50, activation function 'elu', with dropout 0.5
+- fc layer size 10, activation function 'elu', with dropout 0.5
+- fc layer size 1
+
+At first, I only use training data that keeps the vehicle driving on the road.
+In order to gauge how well the model was working, I split my image and steering angle data into a training and validation set. I found that though my first model had a low mean squared error on the training set and low mean squared error on the validation set, the simulated result is not good (the car doesn't know how to turn corners).
+
+After several trials to construct different kinds training data, I found the car will learn to turn corners if I drive it near the border when passing a corner. So I constructed two other kinds of training data:
+
+- Training data that keeps the vehicle driving along the right border of the road. 
+- Training data that keeps the vehicle driving along the left border of the road. 
+
+
+Because I use different kinds of datasets, I train the model several rounds.
+
+The first round is use dataset of car driving near the center. Then I train the generated model by transfer learning use datasets of car driving near the right border and the left border alternatively.
+
+| round | dataset      | epochs |
+| ----- | ------------ | ------ |
+| 1     | center       | 7      |
+| 2     | right border | 10     |
+| 3     | right border | 10     |
+| 4     | left border  | 10     |
+| 5     | right border | 5      |
+| 6     | right border | 5      |
+| 7     | right border | 3      |
+
 
